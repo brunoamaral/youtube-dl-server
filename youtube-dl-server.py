@@ -22,8 +22,8 @@ app_defaults = {
     'YDL_ARCHIVE_FILE': None,
     'YDL_SERVER_HOST': '0.0.0.0',
     'YDL_SERVER_PORT': 8080,
-    'YDL_USERNAME': youtube-dl,
-    'YDL_PASSWORD': youtube-dl
+    'YDL_USERNAME': 'youtube-dl',
+    'YDL_PASSWORD': 'youtube-dl',
 }
 
 def check_pass(username, password):
