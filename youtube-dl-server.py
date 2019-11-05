@@ -4,7 +4,7 @@ import os
 import subprocess
 from queue import Queue
 from bottle import route, run, Bottle, request, static_file, auth_basic
-from passlib.hash import sha256_crypt
+from base64 import b64encode
 from threading import Thread
 import youtube_dl
 from pathlib import Path
@@ -24,15 +24,27 @@ app_defaults = {
     'YDL_SERVER_PORT': 8080,
     'YDL_USERNAME': 'youtube-dl',
     'YDL_PASSWORD': 'youtube-dl',
+    'YDL_BASICAUTHENTICATION': True,
 }
 
 def check_pass(username, password):
-    username = app_vars['YDL_USERNAME']
-    password = app_vars['YDL_PASSWORD']
-    hashed = ''.join(username, password)
-    return sha256_crypt.verify(password, hashed)
+    if app_vars['YDL_BASICAUTHENTICATION'] == True:
+        header = request.environ.get('HTTP_AUTHORIZATION','')
+        print(header)
+        if header:
+            print("Authorization:", header)
+        basic = request.auth
+        if basic:
+            credentials = ':'.join([app_vars['YDL_USERNAME'],app_vars['YDL_PASSWORD']])
+            userAndPass = b64encode(credentials.encode("ascii"))
+            if credentials != userAndPass:
+                abort(401, BASIC_ERROR)
+            return 
+    else:
+        pass
 
-@app.route('/youtube-dl')
+
+@app.route('/')
 @auth_basic(check_pass) 
 def dl_queue_list():
     return static_file('index.html', root='./')
