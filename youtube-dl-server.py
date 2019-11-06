@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 from queue import Queue
-from bottle import route, run, Bottle, request, static_file, auth_basic
+from bottle import route, run, Bottle, request, static_file, auth_basic, HTTPResponse
 from base64 import b64encode
 from threading import Thread
 import youtube_dl
@@ -24,28 +24,30 @@ app_defaults = {
     'YDL_SERVER_PORT': 8080,
     'YDL_USERNAME': 'youtube-dl',
     'YDL_PASSWORD': 'youtube-dl',
-    'YDL_BASICAUTHENTICATION': True,
+    'YDL_BASICAUTHENTICATION': False,
 }
 
 def check_pass(username, password):
     if app_vars['YDL_BASICAUTHENTICATION'] == True:
         header = request.environ.get('HTTP_AUTHORIZATION','')
-        print(header)
         if header:
             print("Authorization:", header)
         basic = request.auth
         if basic:
             credentials = ':'.join([app_vars['YDL_USERNAME'],app_vars['YDL_PASSWORD']])
             userAndPass = b64encode(credentials.encode("ascii"))
-            if credentials != userAndPass:
-                abort(401, BASIC_ERROR)
-            return 
+            inputCredentials = ':'.join([username,password])
+            b64inputCredentials = b64encode(inputCredentials.encode("ascii"))
+            print(b64inputCredentials)
+            print(userAndPass)
+            if b64inputCredentials == userAndPass:
+                return True
     else:
         pass
 
 
-@app.route('/')
-@auth_basic(check_pass) 
+@app.route('/youtube-dl')
+@auth_basic(check_pass)
 def dl_queue_list():
     return static_file('index.html', root='./')
 
@@ -56,11 +58,13 @@ def server_static(filename):
 
 
 @app.route('/youtube-dl/q', method='GET')
+@auth_basic(check_pass)
 def q_size():
     return {"success": True, "size": json.dumps(list(dl_q.queue))}
 
 
 @app.route('/youtube-dl/q', method='POST')
+@auth_basic(check_pass)
 def q_put():
     url = request.forms.get("url")
     options = {
